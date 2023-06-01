@@ -1,0 +1,62 @@
+﻿@implements IAsyncDisposable
+
+@inject PrefectureDataService PrefectureDS
+@inject IJSRuntime JS
+
+<h3>ComboComponent</h3>
+
+<div>
+    <button @onclick="OnClickAsync">コンボの値を取得する</button>
+    @ComboValues
+</div>
+
+@if (PrefectureData == null)
+{
+    <div>
+        <span>Loading...</span>
+    </div>
+}
+else
+{
+    <div @ref="ComboContainerRef">
+        <IgbCombo Data="PrefectureData"
+                  DisplayKey="@nameof(Prefecture.PrefectureName)"
+                  ValueKey="@nameof(Prefecture.PrefectureCode)"/>
+    </div>
+}
+
+@code {
+    private IJSObjectReference? JSModule;
+    private object[]? PrefectureData = null;
+    private ElementReference? ComboContainerRef;
+    private String ComboValues = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        this.PrefectureData = await PrefectureDS.GetPrefectures();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            this.JSModule ??= await this.JS.InvokeAsync<IJSObjectReference>("import", "./Components/ComboComponent.razor.js");
+        }
+    }
+
+    private async Task OnClickAsync()
+    {
+        if(this.JSModule != null)
+        {
+            this.ComboValues = await this.JSModule.InvokeAsync<string>("getComboValuesScript", this.ComboContainerRef);
+        }
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        if (JSModule is not null)
+        {
+            await JSModule.DisposeAsync();
+        }
+    }
+}
