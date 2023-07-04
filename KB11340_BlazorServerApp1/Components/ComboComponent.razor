@@ -6,30 +6,28 @@
 <h3>ComboComponent</h3>
 
 <div>
-    <button @onclick="OnClickAsync">コンボの値を取得する</button>
-    @ComboValues
+    <button @onclick="OnClickAsync">コンボの値を取得する (ValueKey で指定したプロパティ値が配列で取れます)</button>
+    @foreach (var item in ComboValues)
+    {
+        <div>@item</div>
+    }
 </div>
 
-@if (PrefectureData == null)
-{
-    <div>
-        <span>Loading...</span>
-    </div>
-}
-else
-{
-    <div @ref="ComboContainerRef">
-        <IgbCombo Data="PrefectureData"
-                  DisplayKey="@nameof(Prefecture.PrefectureName)"
-                  ValueKey="@nameof(Prefecture.PrefectureCode)"/>
-    </div>
-}
+<div @ref="ComboContainerRef">
+    <IgbCombo Data="PrefectureData"
+              DisplayKey="@nameof(Prefecture.PrefectureName)"
+              ValueKey="@nameof(Prefecture.PrefectureCode)" />
+</div>
 
 @code {
     private IJSObjectReference? JSModule;
-    private object[]? PrefectureData = null;
+
+    // 注意: IgbCombo の Data には null を設定しないでください。
+    // 空集合でいいので、非 null を設定しておかないと、選択肢に "undefined" と表示されてしまいます。
+    private Prefecture[] PrefectureData = Array.Empty<Prefecture>();
+
     private ElementReference? ComboContainerRef;
-    private String ComboValues = "";
+    private string[] ComboValues = Array.Empty<string>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -46,9 +44,10 @@ else
 
     private async Task OnClickAsync()
     {
-        if(this.JSModule != null)
+        if (this.JSModule != null)
         {
-            this.ComboValues = await this.JSModule.InvokeAsync<string>("getComboValuesScript", this.ComboContainerRef);
+            // 選択された項目の、IgbCombo の ValueKey に指定したプロパティ値が、配列で返ってきます。
+            this.ComboValues = await this.JSModule.InvokeAsync<string[]>("getComboValuesScript", this.ComboContainerRef);
         }
     }
 
